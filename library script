@@ -1,0 +1,149 @@
+import time
+from datetime import datetime, timedelta
+
+# ================================
+# Data opslag (voor demo-doeleinden in geheugen)
+# ================================
+
+users = {
+    "admin": {"password": "admin123", "role": "admin"},
+    "user1": {"password": "user123", "role": "user"},
+}
+
+books = {
+    "978-0140449136": {"title": "The Odyssey", "available": True},
+    "978-0141439600": {"title": "Jane Eyre", "available": True},
+}
+
+loans = []  # Lijst van leningen (dicts met user, isbn, leendatum)
+
+# ================================
+# Hulpfuncties
+# ================================
+
+def login():
+    """Simpele loginfunctie met gebruikersrolcontrole"""
+    print("\n=== Login Bibliotheeksysteem ===")
+    username = input("Gebruikersnaam: ")
+    password = input("Wachtwoord: ")
+
+    user = users.get(username)
+    if user and user["password"] == password:
+        print(f"Welkom, {username} ({user['role']})!")
+        return username, user["role"]
+    else:
+        print("Ongeldige inloggegevens.")
+        return None, None
+
+# ================================
+# Admin functies
+# ================================
+
+def add_user():
+    print("\n-- Nieuwe gebruiker aanmaken --")
+    username = input("Nieuwe gebruikersnaam: ")
+    if username in users:
+        print("Gebruiker bestaat al.")
+        return
+    password = input("Wachtwoord: ")
+    role = input("Rol (admin/user): ")
+    users[username] = {"password": password, "role": role}
+    print(f"Gebruiker '{username}' aangemaakt.")
+
+def add_book():
+    print("\n-- Nieuw boek toevoegen --")
+    isbn = input("ISBN: ")
+    if isbn in books:
+        print("Boek bestaat al.")
+        return
+    title = input("Titel: ")
+    books[isbn] = {"title": title, "available": True}
+    print(f"Boek '{title}' toegevoegd aan collectie.")
+
+# ================================
+# Gebruikersfuncties
+# ================================
+
+def list_books():
+    print("\n-- Beschikbare boeken --")
+    for isbn, info in books.items():
+        status = "Beschikbaar" if info["available"] else "Uitgeleend"
+        print(f"{isbn} - {info['title']} ({status})")
+
+def borrow_book(username):
+    isbn = input("Voer ISBN in van het boek dat je wilt lenen: ")
+    if isbn not in books:
+        print("Boek niet gevonden.")
+        return
+    if not books[isbn]["available"]:
+        print("Boek is momenteel niet beschikbaar.")
+        return
+    books[isbn]["available"] = False
+    loans.append({
+        "user": username,
+        "isbn": isbn,
+        "borrow_date": datetime.now()
+    })
+    print(f"Boek '{books[isbn]['title']}' succesvol geleend.")
+
+def return_book(username):
+    isbn = input("Voer ISBN in van het boek dat je wilt terugbrengen: ")
+    for loan in loans:
+        if loan["isbn"] == isbn and loan["user"] == username:
+            books[isbn]["available"] = True
+            loans.remove(loan)
+            print("Boek succesvol teruggebracht.")
+            return
+    print("Geen uitlening gevonden met dit ISBN.")
+
+def check_overdue():
+    print("\n-- Te laat ingeleverde boeken --")
+    now = datetime.now()
+    for loan in loans:
+        if now - loan["borrow_date"] > timedelta(days=14):
+            print(f"Gebruiker {loan['user']} is te laat met boek {loan['isbn']} ({books[loan['isbn']]['title']})")
+
+# ================================
+# Hoofdprogramma
+# ================================
+
+def main():
+    while True:
+        username, role = login()
+        if not username:
+            continue
+
+        while True:
+            print("\n-- Hoofdmenu --")
+            if role == "admin":
+                print("1. Gebruiker toevoegen\n2. Boek toevoegen\n3. Boeken tonen\n4. Controleer te laat\n5. Uitloggen")
+                keuze = input("Keuze: ")
+                if keuze == "1":
+                    add_user()
+                elif keuze == "2":
+                    add_book()
+                elif keuze == "3":
+                    list_books()
+                elif keuze == "4":
+                    check_overdue()
+                elif keuze == "5":
+                    break
+                else:
+                    print("Ongeldige keuze.")
+
+            elif role == "user":
+                print("1. Boeken bekijken\n2. Boek lenen\n3. Boek terugbrengen\n4. Uitloggen")
+                keuze = input("Keuze: ")
+                if keuze == "1":
+                    list_books()
+                elif keuze == "2":
+                    borrow_book(username)
+                elif keuze == "3":
+                    return_book(username)
+                elif keuze == "4":
+                    break
+                else:
+                    print("Ongeldige keuze.")
+
+if __name__ == "__main__":
+    main()
