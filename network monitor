@@ -1,0 +1,70 @@
+import os
+import platform
+import time
+
+# ================================
+# Configuratie: aanpasbaar segment
+# ================================
+
+# Lijst met IP-adressen of hostnames die je wilt monitoren
+HOSTS = [
+    "8.8.8.8",       # Google DNS
+    "1.1.1.1",       # Cloudflare DNS
+    "localhost",     # Eigen machine
+    "192.168.1.1"    # Voorbeeld routeradres
+]
+
+# Interval tussen pings (in seconden)
+INTERVAL = 5
+
+# Aantal pogingen per host
+PING_RETRIES = 3
+
+# ===========================
+# Functie: Host ping uitvoeren
+# ===========================
+def ping_host(host):
+    """
+    Voert een ping uit naar een host en geeft True/False terug afhankelijk van beschikbaarheid.
+    """
+    param = "-n" if platform.system().lower() == "windows" else "-c"
+    command = f"ping {param} 1 {host}"
+    response = os.system(command)
+    return response == 0
+
+# ===============================
+# Monitoringlogica en loop
+# ===============================
+def monitor_hosts():
+    """
+    Monitort de lijst met hosts in een lus en toont beschikbaarheidsstatus.
+    """
+    while True:
+        print("\n---- Monitoringsessie gestart ----")
+        for host in HOSTS:
+            print(f"Controleren van host: {host}")
+            success = False
+
+            # Probeer meerdere keren te pingen
+            for attempt in range(PING_RETRIES):
+                if ping_host(host):
+                    success = True
+                    break
+                time.sleep(1)
+
+            if success:
+                print(f"[OK] {host} is bereikbaar.")
+            else:
+                print(f"[WAARSCHUWING] {host} is NIET bereikbaar!")
+
+        print("---- Wacht op volgende sessie ----")
+        time.sleep(INTERVAL)
+
+# ======================
+# Start het script
+# ======================
+if __name__ == "__main__":
+    try:
+        monitor_hosts()
+    except KeyboardInterrupt:
+        print("\nMonitoring gestopt door gebruiker.")
